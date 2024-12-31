@@ -1,0 +1,2 @@
+class FFmpegError(Exception):
+    pass

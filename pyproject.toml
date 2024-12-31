@@ -1,0 +1,59 @@
+[tool.poetry]
+name = "distributed-ffmpeg-nvr"
+version = "1.0.0"
+description = ""
+authors = ["m8u <mzgtootoo@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+pydantic-settings = "^2.6.1"
+pytest = "^8.3.4"
+pytest-asyncio = "^0.25.0"
+aio-pika = "^9.5.4"
+redis = {extras = ["hiredis"], version = "^5.2.1"}
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.lint.dependencies]
+ruff = "~0.1.14"
+
+[tool.ruff]
+lint.ignore-init-module-imports = true
+line-length = 120
+include = ["*.py"]
+exclude = ["*.git", "migrations", "venv", "manage.py", "venv", "migrations", "manage.py", "asgi.py", "wsgi.py", "apps/core/migrations", "ci-cd-files/create_dotenv_from_json.py", ".dockerignore", ".editorconfig", ".gitlab-ci.yml", ".pre-commit-config.yaml", "application.log", "celery-beat.sh", "celery-flower.sh", "celery-exporter.sh", "celery-worker.sh", "celery-worker-it-register.sh", "docker-compose.yml", "gunicorn.sh", "pyproject.toml", "pytest.ini", "README.md", "setup.cfg", "src/base_models.py"]
+lint.ignore = [
+    "C901", "E501", "E203", "F403", "F405", "D100", "D103", "D104", "BLE001", "FIX002", "B905",
+    "RET505", "SIM114", "SIM102", "B904", "DJ012", "RET508", "RET506", "RET507",
+    "PT019", "B020", "SIM112", "PIE804", "E741", "DJ007", "B019", "B026", "B905", "B008", "ERA001"
+]
+lint.select = ["E", "F", "A", "Q", "B", "COM", "C4", "DJ", "FIX", "PIE", "T20", "PT", "RET", "SIM", "N", "ERA", "ISC", "I"]
+show-source = true
+show-fixes = true
+
+[tool.ruff.lint.isort]
+case-sensitive = false
+order-by-type = false
+
+[tool.black]
+line-length = 120
+skip-magic-trailing-comma = true
+include = '\.pyi?$'
+exclude = '''
+(
+  /(
+      \.git
+    | alembic
+    | venv
+    | .venv
+    | ci-cd-files
+  )/
+)
+'''
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
