@@ -1,6 +1,7 @@
 import asyncio
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+import os
 from src.core.ffmpeg.ffmpeg import RTSP_TIMEOUT_SECONDS, FFmpeg
 from src.streams.repo import Stream, StreamsRepo
 from src.settings import Settings
@@ -12,7 +13,7 @@ class Recording:
     stream: Stream
     ffmpeg: FFmpeg
     task: asyncio.Task
-    is_healthy: bool = False
+    is_healthy: bool = True
     last_restart: datetime | None = None
     num_restarts: int = 0
 
@@ -20,6 +21,8 @@ class Recording:
 async def manage() -> None:
     settings = Settings()
     streams_repo = StreamsRepo()
+
+    os.makedirs(settings.RECORDINGS_MOUNT_POINT, exist_ok=True)
 
     recordings: dict[str, Recording] = {}
 
@@ -38,26 +41,35 @@ async def manage() -> None:
             await streams_repo.extend(guid, settings.STREAM_OCCUPATION_TIME)
 
         # check tasks for exceptions
-        done, _ = await asyncio.wait((r.task for r in recordings.values()), timeout=0.1)
-        for task in done:
-            if task.exception() is None:
-                continue
-            # todo raise if it's not a timeout or disconnection
-            guid = task.get_name()
-            recordings[guid].is_healthy = False
+        if len(recordings) > 0:
+            done, _ = await asyncio.wait((r.task for r in recordings.values()), timeout=0.1)
+            for task in done:
+                if task.exception() is None:
+                    continue
+                # todo raise if it's not a timeout or disconnection
+                guid = task.get_name()
+                recordings[guid].is_healthy = False
 
         # restart unhealthy ones
         for guid, recording in recordings.items():
             if recording.is_healthy:
                 continue
             interval = get_reconnection_interval(recording.num_restarts)
-            if recording.last_restart + timedelta(seconds=RTSP_TIMEOUT_SECONDS) + interval < datetime.now():
+            restart_at = (recording.last_restart or datetime.min) + timedelta(seconds=RTSP_TIMEOUT_SECONDS) + interval
+            if restart_at < datetime.now():
                 # if running, mark as healthy and skip
                 if not recording.task.done():
                     recording.is_healthy = True
+                    recording.num_restarts = 0
                     continue
+                recording.num_restarts += 1
+                recording.last_restart = datetime.now()
                 recording.task = asyncio.create_task(
-                    recording.ffmpeg.record(recording.stream.url, recording.stream.name, settings.SEGMENT_TIME),
+                    recording.ffmpeg.record(
+                        recording.stream.url,
+                        f"{settings.RECORDINGS_MOUNT_POINT}/{recording.stream.name}",
+                        settings.SEGMENT_TIME,
+                    ),
                     name=guid,
                 )
 
@@ -71,4 +83,4 @@ async def manage() -> None:
                 ffmpeg.record(stream.url, stream.name, settings.SEGMENT_TIME),
                 name=stream.guid,  # stream guid as task name for later identification
             )
-            recordings[stream.guid] = Recording(stream.url, stream.name, ffmpeg, task)
+            recordings[stream.guid] = Recording(stream, ffmpeg, task)

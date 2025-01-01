@@ -1,10 +1,11 @@
 import asyncio
 from datetime import timedelta
+import os
 
 from src.core.ffmpeg.exceptions import FFmpegError
 
 RTSP_TIMEOUT_SECONDS = 5
-RTSP_TIMEOUT_NANOSEC = RTSP_TIMEOUT_SECONDS * 10e6
+RTSP_TIMEOUT_MICROSEC = RTSP_TIMEOUT_SECONDS * 1e6
 
 
 class FFmpeg:
@@ -15,8 +16,10 @@ class FFmpeg:
         if self.p is not None:
             raise RuntimeError("ffmpeg process is already running")
 
+        os.makedirs(output_dir, exist_ok=True)
+
         self.p = await asyncio.create_subprocess_shell(
-            f"ffmpeg -y -rtsp_transport tcp -use_wallclock_as_timestamps 1 -timeout {RTSP_TIMEOUT_NANOSEC}"
+            f"ffmpeg -y -rtsp_transport tcp -use_wallclock_as_timestamps 1 -timeout {RTSP_TIMEOUT_MICROSEC}"
             f" -i {stream_url} -c copy -map 0"
             f" -f segment -segment_time {segment_time} -reset_timestamps 1 -segment_atclocktime 1"
             f" -strftime 1 {output_dir}/%Y-%m-%d_%H-%M-%S.mp4"

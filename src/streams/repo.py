@@ -41,7 +41,7 @@ class StreamsRepo(metaclass=Singleton):
         streams = []
         for key in keys:
             stream_data = json.loads(await self._redis.get(key))
-            streams.append(Stream(guid=stream_data.guid, name=stream_data.name, url=stream_data.url))
+            streams.append(Stream(guid=stream_data["guid"], name=stream_data["name"], url=stream_data["url"]))
         return streams
 
     async def occupy(self, seconds: int) -> Stream | None:
@@ -52,19 +52,19 @@ class StreamsRepo(metaclass=Singleton):
         while True:
             stream_keys = await self._redis.keys(f"{KEY_PREFIX}-stream-*")
             lock_keys = await self._redis.keys(f"{KEY_PREFIX}-lock-*")
-            unoccupied = set(k.removeprefix(f"{KEY_PREFIX}-stream-") for k in stream_keys) - set(
-                k.removeprefix(f"{KEY_PREFIX}-lock-") for k in lock_keys
+            unoccupied = set(k.decode().removeprefix(f"{KEY_PREFIX}-stream-") for k in stream_keys) - set(
+                k.decode().removeprefix(f"{KEY_PREFIX}-lock-") for k in lock_keys
             )
             for guid in unoccupied:
-                ok = await self._redis.set(f"{KEY_PREFIX}-lock-{guid}", self._uuid, ex=seconds, nx=True)
+                ok = await self._redis.set(f"{KEY_PREFIX}-lock-{guid}", str(self._uuid), ex=seconds, nx=True)
                 logger.debug(f"redis returned {ok} when trying to occupy stream")
                 if not ok:
                     await asyncio.sleep(random.random())
                     continue
                 stream_data = json.loads(await self._redis.get(f"{KEY_PREFIX}-stream-{guid}"))
-                return Stream(guid=stream_data.guid, name=stream_data.name, url=stream_data.url)
+                return Stream(guid=stream_data["guid"], name=stream_data["name"], url=stream_data["url"])
 
             return None
 
     async def extend(self, guid: str, seconds: int) -> None:
-        await self._redis.set(f"{KEY_PREFIX}-lock-{guid}", self._uuid, ex=seconds, nx=False)
+        await self._redis.set(f"{KEY_PREFIX}-lock-{guid}", str(self._uuid), ex=seconds, nx=False)
