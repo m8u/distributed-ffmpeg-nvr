@@ -4,12 +4,10 @@ import src.amqp as amqp
 from src.streams import recordings
 from src.settings import Settings
 
-logger = logging.getLogger(__name__)
-
 
 async def main():
     settings = Settings()
-    logging.basicConfig(level=settings.LOGGING_LEVEL)
+    logging.basicConfig(level=settings.LOGGING_LEVEL, format="[%(levelname)s] %(asctime)s: %(message)s")
 
     amqp_task = asyncio.create_task(amqp.consume())
     recordings_task = asyncio.create_task(recordings.manage())

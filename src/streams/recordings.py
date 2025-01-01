@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import os
@@ -6,6 +7,8 @@ from src.core.ffmpeg.ffmpeg import RTSP_TIMEOUT_SECONDS, FFmpeg
 from src.streams.repo import Stream, StreamsRepo
 from src.settings import Settings
 from src.streams.utils import get_reconnection_interval
+
+logger = logging.getLogger()
 
 
 @dataclass
@@ -34,6 +37,7 @@ async def manage() -> None:
         recordings_to_stop = {guid for guid in recordings} - {stream.guid for stream in streams}
         for guid in recordings_to_stop:
             recordings[guid].ffmpeg.stop()
+            await asyncio.gather(recordings[guid].task, return_exceptions=True)
             recordings.pop(guid)
 
         # extend occupation
@@ -78,9 +82,10 @@ async def manage() -> None:
             stream = await streams_repo.occupy(settings.STREAM_OCCUPATION_TIME)
             if stream is None:
                 continue
+            logger.info(f"start recording stream {stream.guid}")
             ffmpeg = FFmpeg()
             task = asyncio.create_task(
-                ffmpeg.record(stream.url, stream.name, settings.SEGMENT_TIME),
+                ffmpeg.record(stream.url, f"{settings.RECORDINGS_MOUNT_POINT}/{stream.name}", settings.SEGMENT_TIME),
                 name=stream.guid,  # stream guid as task name for later identification
             )
             recordings[stream.guid] = Recording(stream, ffmpeg, task)

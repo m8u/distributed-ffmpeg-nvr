@@ -57,7 +57,7 @@ class StreamsRepo(metaclass=Singleton):
             )
             for guid in unoccupied:
                 ok = await self._redis.set(f"{KEY_PREFIX}-lock-{guid}", str(self._uuid), ex=seconds, nx=True)
-                logger.debug(f"redis returned {ok} when trying to occupy stream")
+                logger.debug(f"redis returned {ok} when trying to occupy stream {guid}")
                 if not ok:
                     await asyncio.sleep(random.random())
                     continue

@@ -25,7 +25,6 @@ async def consume() -> None:
         async with message.process():
             logger.debug(message.body)
             await handle(message.body)
-            await message.ack()
 
     await queue.consume(process_message)
 
