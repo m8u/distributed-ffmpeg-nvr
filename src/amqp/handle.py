@@ -5,7 +5,6 @@ from src.streams.repo import Stream, StreamsRepo
 logger = logging.getLogger(__name__)
 
 
-# {"action": "ADD", "guid": "jopa", "url": "rtsp://kek", "device_name": "jopa жопа jopa"}
 async def handle(payload: bytes) -> None:
     streams_repo = StreamsRepo()
 
