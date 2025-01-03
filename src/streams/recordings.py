@@ -3,6 +3,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import os
+from src.core.ffmpeg.exceptions import FFmpegError
 from src.core.ffmpeg.ffmpeg import RTSP_TIMEOUT_SECONDS, FFmpeg
 from src.streams.repo import Stream, StreamsRepo
 from src.settings import Settings
@@ -48,9 +49,11 @@ async def manage() -> None:
         if len(recordings) > 0:
             done, _ = await asyncio.wait((r.task for r in recordings.values()), timeout=0.1)
             for task in done:
-                if task.exception() is None:
+                exc = task.exception()
+                if exc is None:
                     continue
-                # todo raise if it's not a timeout or disconnection
+                if exc is not FFmpegError:
+                    raise exc
                 guid = task.get_name()
                 recordings[guid].is_healthy = False
 
@@ -73,6 +76,7 @@ async def manage() -> None:
                         recording.stream.url,
                         f"{settings.RECORDINGS_MOUNT_POINT}/{recording.stream.name}",
                         settings.SEGMENT_TIME,
+                        settings.NUM_SEGMENTS,
                     ),
                     name=guid,
                 )
@@ -85,7 +89,12 @@ async def manage() -> None:
             logger.info(f"start recording stream {stream.guid}")
             ffmpeg = FFmpeg()
             task = asyncio.create_task(
-                ffmpeg.record(stream.url, f"{settings.RECORDINGS_MOUNT_POINT}/{stream.name}", settings.SEGMENT_TIME),
+                ffmpeg.record(
+                    stream.url,
+                    f"{settings.RECORDINGS_MOUNT_POINT}/{stream.name}",
+                    settings.SEGMENT_TIME,
+                    settings.NUM_SEGMENTS,
+                ),
                 name=stream.guid,  # stream guid as task name for later identification
             )
             recordings[stream.guid] = Recording(stream, ffmpeg, task)

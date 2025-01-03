@@ -14,3 +14,4 @@ class Settings(BaseSettings):
     STREAM_OCCUPATION_TIME: int = 10
     RECORDINGS_MOUNT_POINT: str
     SEGMENT_TIME: timedelta
+    NUM_SEGMENTS: int

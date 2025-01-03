@@ -17,10 +17,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-"""
-    todo
-    1) запушить девайс интегрейшнс
-    2) запушить го2ртц
-    3) обновить .env.example
-"""

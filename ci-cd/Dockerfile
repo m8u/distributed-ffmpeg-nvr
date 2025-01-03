@@ -4,7 +4,8 @@ FROM python:${PYTHON_VERSION}-alpine
 
 WORKDIR /app
 
-RUN apk add ffmpeg
+RUN apk update && \
+    apk add ffmpeg samba-client cifs-utils findutils
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
@@ -18,4 +19,4 @@ RUN pip install poetry && \
 
 COPY . .
 
-ENTRYPOINT ["python", "src/main.py"]
+ENTRYPOINT ["sh", "ci-cd/docker-entrypoint.sh"]
