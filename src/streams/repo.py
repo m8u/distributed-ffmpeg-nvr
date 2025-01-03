@@ -49,22 +49,22 @@ class StreamsRepo(metaclass=Singleton):
         Try to occupy an unoccupied stream, and return it.
         If there are no unoccupied streams, return None.
         """
-        while True:
-            stream_keys = await self._redis.keys(f"{KEY_PREFIX}-stream-*")
-            lock_keys = await self._redis.keys(f"{KEY_PREFIX}-lock-*")
-            unoccupied = set(k.decode().removeprefix(f"{KEY_PREFIX}-stream-") for k in stream_keys) - set(
-                k.decode().removeprefix(f"{KEY_PREFIX}-lock-") for k in lock_keys
-            )
-            for guid in unoccupied:
-                ok = await self._redis.set(f"{KEY_PREFIX}-lock-{guid}", str(self._uuid), ex=seconds, nx=True)
-                logger.debug(f"redis returned {ok} when trying to occupy stream {guid}")
-                if not ok:
-                    await asyncio.sleep(random.random())
-                    continue
-                stream_data = json.loads(await self._redis.get(f"{KEY_PREFIX}-stream-{guid}"))
-                return Stream(guid=stream_data["guid"], name=stream_data["name"], url=stream_data["url"])
+        stream_keys = await self._redis.keys(f"{KEY_PREFIX}-stream-*")
+        lock_keys = await self._redis.keys(f"{KEY_PREFIX}-lock-*")
+        unoccupied = set(k.decode().removeprefix(f"{KEY_PREFIX}-stream-") for k in stream_keys) - set(
+            k.decode().removeprefix(f"{KEY_PREFIX}-lock-") for k in lock_keys
+        )
+        for guid in unoccupied:
+            ok = await self._redis.set(f"{KEY_PREFIX}-lock-{guid}", str(self._uuid), ex=seconds, nx=True)
+            logger.debug(f"redis returned {ok} when trying to occupy stream {guid}")
+            if not ok:
+                # random delay to desynchronize replicas
+                await asyncio.sleep(random.random())
+                continue
+            stream_data = json.loads(await self._redis.get(f"{KEY_PREFIX}-stream-{guid}"))
+            return Stream(guid=stream_data["guid"], name=stream_data["name"], url=stream_data["url"])
 
-            return None
+        return None
 
     async def extend(self, guid: str, seconds: int) -> None:
         await self._redis.set(f"{KEY_PREFIX}-lock-{guid}", str(self._uuid), ex=seconds, nx=False)
