@@ -1,0 +1,32 @@
+include:
+  - project: 'smart-operator/smart-operator/ci-cd-scripts'
+    ref: main
+    file:
+      - 'scripts/.build.yml'
+      - 'scripts/.deploy.yml'
+
+stages:
+  - build
+  - deploy
+
+.test_template:
+  variables:
+    ENVIRONMENT: test
+  only:
+    refs:
+      - dev
+      - test
+      - /^feature/.*/
+
+.prod_template:
+  variables:
+    ENVIRONMENT: prod
+  only:
+    refs:
+      - main
+      - /^rc-.*/
+
+variables:
+  APP_NAME: ffnvr
+  CI_APPLICATION_TAG: $ENVIRONMENT-$CI_PIPELINE_IID
+  CI_APPLICATION_REPOSITORY: $CI_REGISTRY/$APP_NAME
