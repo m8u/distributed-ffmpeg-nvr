@@ -53,7 +53,7 @@ async def manage() -> None:
                 exc = task.exception()
                 if exc is None:
                     continue
-                if exc is not FFmpegError:
+                if not isinstance(exc, FFmpegError):
                     raise exc
                 guid = task.get_name()
                 recordings[guid].is_healthy = False
