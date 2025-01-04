@@ -1,21 +1,10 @@
-ARG PYTHON_VERSION="3.13"
+ARG CI_REGISTRY
+ARG CI_PROJECT_NAME
+ARG ENVIRONMENT
 
-FROM python:${PYTHON_VERSION}-alpine
+FROM ${CI_REGISTRY}/${CI_PROJECT_NAME}:base-${ENVIRONMENT}
 
 WORKDIR /app
-
-RUN apk update && \
-    apk add ffmpeg samba-client cifs-utils findutils
-
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=${PYTHONPATH}:/app/src
-
-COPY pyproject.toml .
-
-RUN pip install poetry && \
-    poetry config virtualenvs.create false && \
-    poetry install
 
 COPY . .
 
