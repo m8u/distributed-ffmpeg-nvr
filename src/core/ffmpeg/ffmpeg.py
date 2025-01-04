@@ -35,7 +35,7 @@ class FFmpeg:
             f" -rtsp_transport tcp -use_wallclock_as_timestamps 1 -timeout {RTSP_TIMEOUT_MICROSEC}"
             f" -i {stream_url} -c copy -map 0"
             f" -f segment -segment_time {segment_time} -reset_timestamps 1 -segment_atclocktime 1"
-            f" -strftime 1 {output_dir}/.{TIMESTAMP_FORMAT}.mp4"
+            f" -strftime 1 '{output_dir}/.{TIMESTAMP_FORMAT}.mp4'"
         )
 
         while self.p.returncode is None:
