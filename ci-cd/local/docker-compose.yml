@@ -25,10 +25,10 @@ services:
 
   ffnvr:
     build:
-      context: ../.
-      dockerfile: ./ci-cd/Dockerfile
+      context: ../../.
+      dockerfile: ./ci-cd/local/local.Dockerfile
     env_file:
-      - ../.env
+      - ../../.env
     privileged: true
     deploy:
       mode: replicated

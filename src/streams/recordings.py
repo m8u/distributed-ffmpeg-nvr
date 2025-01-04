@@ -17,6 +17,7 @@ class Recording:
     stream: Stream
     ffmpeg: FFmpeg
     task: asyncio.Task
+    output_dir: str
     is_healthy: bool = True
     last_restart: datetime | None = None
     num_restarts: int = 0
@@ -73,10 +74,7 @@ async def manage() -> None:
                 recording.last_restart = datetime.now()
                 recording.task = asyncio.create_task(
                     recording.ffmpeg.record(
-                        recording.stream.url,
-                        f"{settings.RECORDINGS_MOUNT_POINT}/{recording.stream.name}",
-                        settings.SEGMENT_TIME,
-                        settings.NUM_SEGMENTS,
+                        recording.stream.url, recording.output_dir, settings.SEGMENT_TIME, settings.NUM_SEGMENTS
                     ),
                     name=guid,
                 )
@@ -86,15 +84,12 @@ async def manage() -> None:
             stream = await streams_repo.occupy(settings.STREAM_OCCUPATION_TIME)
             if stream is None:
                 continue
-            logger.info(f"start recording stream {stream.guid}")
+            logger.info(f"start recording stream {stream.name}")
             ffmpeg = FFmpeg()
+            parent_dir = f"{stream.name.split(' (')[0]}/" if " (" in stream.name else ""
+            output_dir = f"{settings.RECORDINGS_MOUNT_POINT}/{parent_dir}{stream.name}"
             task = asyncio.create_task(
-                ffmpeg.record(
-                    stream.url,
-                    f"{settings.RECORDINGS_MOUNT_POINT}/{stream.name}",
-                    settings.SEGMENT_TIME,
-                    settings.NUM_SEGMENTS,
-                ),
+                ffmpeg.record(stream.url, output_dir, settings.SEGMENT_TIME, settings.NUM_SEGMENTS),
                 name=stream.guid,  # stream guid as task name for later identification
             )
-            recordings[stream.guid] = Recording(stream, ffmpeg, task)
+            recordings[stream.guid] = Recording(stream, ffmpeg, task, output_dir)

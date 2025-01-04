@@ -72,7 +72,7 @@ class FFmpeg:
                 continue
 
             p = await asyncio.create_subprocess_shell(
-                f"ffprobe -v error -show_entries format=duration -of csv=p=0 {self.output_dir}/{filename}",
+                f"ffprobe -v error -show_entries format=duration -of csv=p=0 '{self.output_dir}/{filename}'",
                 stdout=PIPE,
                 stderr=PIPE,
             )
@@ -95,5 +95,5 @@ class FFmpeg:
         Removes segment files older than SEGMENT_TIME * NUM_SEGMENTS
         """
         mtime_days = self.segment_time.total_seconds() / (60 * 60 * 24) * (self.num_segments + 1)
-        p = await asyncio.create_subprocess_shell(f"find {self.output_dir} -type f -mtime {mtime_days} -delete")
+        p = await asyncio.create_subprocess_shell(f"find '{self.output_dir}' -type f -mtime {mtime_days} -delete")
         await p.wait()
