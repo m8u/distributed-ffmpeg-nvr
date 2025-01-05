@@ -84,11 +84,14 @@ async def manage() -> None:
             stream = await streams_repo.occupy(settings.STREAM_OCCUPATION_TIME)
             if stream is None:
                 continue
+
             logger.info(f"start recording stream {stream.name}")
-            ffmpeg = FFmpeg()
+            
             stream_name_path_safe = stream.name.replace("/", "-")
             parent_dir = f"{stream_name_path_safe.split(' (')[0]}/" if " (" in stream_name_path_safe else ""
             output_dir = f"{settings.RECORDINGS_MOUNT_POINT}/{parent_dir}{stream_name_path_safe}"
+
+            ffmpeg = FFmpeg()
             task = asyncio.create_task(
                 ffmpeg.record(stream.url, output_dir, settings.SEGMENT_TIME, settings.NUM_SEGMENTS),
                 name=stream.guid,  # stream guid as task name for later identification
