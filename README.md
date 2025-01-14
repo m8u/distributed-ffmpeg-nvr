@@ -11,13 +11,13 @@ Streams can be configured via AMQP (we use RabbitMQ) like this:
     "action": "<ADD | DELETE>",
     "guid": "<unique id, e.g. UUID4>",
     "name": "<also unique, used for naming output path>",
-    "url": "<rtsp url>"
+    "url": "<RTSP url>"
 }
 ```
 
 See [.env.example](.env.example) for startup configuration
 
-As for storage, we currently use good ol' SMB/CIFS mount. Our future task is to introduce some kind of distributed storage in case we're out of network bandwidth and/or write speed on a single disk.
+As for storage, we currently use good ol' SMB/CIFS mount. Our future task is to introduce some kind of distributed storage in case we're out of network bandwidth and/or write speed of a single disk.
 
 # License
 
