@@ -1,5 +1,6 @@
 import asyncio
 from asyncio.subprocess import PIPE
+from contextlib import suppress
 from datetime import datetime, timedelta
 import logging
 import os
@@ -80,7 +81,8 @@ class FFmpeg:
             if p.returncode != 0:
                 # there can be broken segments (due to crashes etc.), so let's just remove them ¯\_(ツ)_/¯
                 logger.warning(f"ffprobe returned {p.returncode}, removing {self.output_dir}/{filename}")
-                os.remove(f"{self.output_dir}/{filename}")
+                with suppress(FileNotFoundError):
+                    os.remove(f"{self.output_dir}/{filename}")
                 continue
 
             duration_seconds = float(result.decode())
