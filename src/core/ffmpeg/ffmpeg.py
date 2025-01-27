@@ -3,6 +3,7 @@ from asyncio.subprocess import PIPE
 from contextlib import suppress
 from datetime import datetime, timedelta
 import logging
+from multiprocessing import Value
 import os
 
 from src.core.ffmpeg.exceptions import FFmpegError
@@ -80,17 +81,27 @@ class FFmpeg:
             result, _ = await p.communicate()
             if p.returncode != 0:
                 # there can be broken segments (due to crashes etc.), so let's just remove them ¯\_(ツ)_/¯
-                logger.warning(f"ffprobe returned {p.returncode}, removing {self.output_dir}/{filename}")
+                logger.warning(f"ffprobe exited with code {p.returncode}, removing {self.output_dir}/{filename}")
                 with suppress(FileNotFoundError):
                     os.remove(f"{self.output_dir}/{filename}")
                 continue
 
-            duration_seconds = float(result.decode())
+            try:
+                duration_seconds = float(result.decode())
+            except ValueError:
+                logger.warning(
+                    f"ffprobe reported duration of {result.decode()!r}, removing {self.output_dir}/{filename}"
+                )
+                with suppress(FileNotFoundError):
+                    os.remove(f"{self.output_dir}/{filename}")
+                continue
+
             start_ts = datetime.strptime(filename.removeprefix(".").removesuffix(".mp4"), TIMESTAMP_FORMAT)
             end_ts = start_ts + timedelta(seconds=duration_seconds)
 
             new_filename = f"{start_ts.strftime(TIMESTAMP_FORMAT)}_{end_ts.strftime(TIMESTAMP_FORMAT)}.mp4"
-            os.rename(f"{self.output_dir}/{filename}", f"{self.output_dir}/{new_filename}")
+            with suppress(FileNotFoundError):
+                os.rename(f"{self.output_dir}/{filename}", f"{self.output_dir}/{new_filename}")
 
     async def _remove_segments(self) -> None:
         """
